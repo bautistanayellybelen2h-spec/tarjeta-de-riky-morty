@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- TAILWIND CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- VUE 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <title>Personajes Rick and Morty</title>
+</head>
+
+
+<body class="bg-slate-900 min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <div id="app" class="w-full max-w-md">
+
+        <!-- TÍTULO -->
+        <h1 class="text-3xl font-black text-center text-emerald-400 mb-2">
+            Rick and Morty
+        </h1>
+
+        <p class="text-center text-slate-400 mb-6">
+            Buscador de personajes
+        </p>
+
+
+        <!-- BUSCADOR -->
+        <div class="bg-slate-800 p-5 rounded-2xl shadow-xl mb-10">
+
+            <label class="text-white font-bold block mb-2">
+                ID del personaje
+            </label>
+
+            <div class="flex gap-2">
+
+                <input
+                    v-model="idPersonaje"
+                    @keyup.enter="obtenerPersonaje"
+                    type="number"
+                    min="1"
+                    placeholder="Ejemplo: 1"
+                    class="w-full bg-slate-900 text-white
+                    border border-slate-600 rounded-xl
+                    px-4 py-3 outline-none
+                    focus:border-emerald-400"
+                >
+
+                <button
+                    @click="obtenerPersonaje"
+                    class="bg-emerald-500 hover:bg-emerald-400
+                    px-5 rounded-xl font-bold
+                    text-slate-900 transition"
+                >
+                    Buscar
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- MENSAJE DE CARGA -->
+        <div
+            v-if="estaCargando"
+            class="text-center text-emerald-400 font-bold"
+        >
+            Buscando personaje...
+        </div>
+
+
+        <!-- MENSAJE DE ERROR -->
+        <div
+            v-else-if="error"
+            class="bg-red-500/20 border border-red-500
+            text-red-300 p-4 rounded-xl text-center"
+        >
+            {{ error }}
+        </div>
+
+
+        <!-- TARJETA -->
+        <article
+            v-else-if="personaje"
+            class="bg-slate-800 rounded-2xl shadow-2xl
+            p-6 border border-slate-700 mt-16"
+        >
+
+            <!-- IMAGEN -->
+            <div class="w-32 h-32 mx-auto -mt-20">
+
+                <img
+                    :src="personaje.image"
+                    :alt="personaje.name"
+                    class="w-full h-full object-cover
+                    rounded-full border-4
+                    border-slate-800 shadow-xl"
+                >
+
+            </div>
+
+
+            <!-- INFORMACIÓN -->
+            <div class="text-center mt-4">
+
+                <!-- ID -->
+                <p class="text-emerald-400 font-bold text-sm">
+                    ID: {{ personaje.id }}
+                </p>
+
+
+                <!-- NOMBRE -->
+                <h2 class="text-3xl font-black text-white mt-1">
+                    {{ personaje.name }}
+                </h2>
+
+
+                <!-- ESTADO -->
+                <div class="flex justify-center items-center gap-2 mt-3">
+
+                    <span
+                        class="w-3 h-3 rounded-full"
+                        :class="obtenerColorEstado(personaje.status)"
+                    ></span>
+
+                    <p class="text-slate-300">
+                        {{ personaje.status }}
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- DETALLES -->
+            <div class="bg-slate-900/60 rounded-xl p-5 mt-6">
+
+                <!-- ESPECIE -->
+                <div class="mb-4">
+
+                    <p class="text-slate-500 text-xs uppercase font-bold">
+                        Especie
+                    </p>
+
+                    <p class="text-white text-lg">
+                        {{ personaje.species }}
+                    </p>
+
+                </div>
+
+
+                <!-- LOCALIZACIÓN -->
+                <div>
+
+                    <p class="text-slate-500 text-xs uppercase font-bold">
+                        Localización
+                    </p>
+
+                    <p class="text-white text-lg">
+                        {{ personaje.location.name }}
+                    </p>
+
+                </div>
+
+            </div>
+
+        </article>
+
+    </div>
+
+
+
+    <!-- JAVASCRIPT + VUE -->
+    <script>
+
+        const { createApp, ref } = Vue;
+
+        createApp({
+
+            setup() {
+
+                // ID que escribe el usuario
+                const idPersonaje = ref("");
+
+                // Datos del personaje
+                const personaje = ref(null);
+
+                // Estado de carga
+                const estaCargando = ref(false);
+
+                // Errores
+                const error = ref("");
+
+
+                // FUNCIÓN PARA BUSCAR
+                const obtenerPersonaje = async () => {
+
+                    if (!idPersonaje.value) {
+
+                        error.value = "Escribe un ID para buscar.";
+
+                        personaje.value = null;
+
+                        return;
+                    }
+
+
+                    estaCargando.value = true;
+
+                    error.value = "";
+
+
+                    try {
+
+                        const respuesta = await fetch(
+                            `https://rickandmortyapi.com/api/character/${idPersonaje.value}`
+                        );
+
+
+                        if (!respuesta.ok) {
+
+                            throw new Error("Personaje no encontrado");
+
+                        }
+
+
+                        const datos = await respuesta.json();
+
+
+                        personaje.value = datos;
+
+                    }
+
+
+                    catch (err) {
+
+                        personaje.value = null;
+
+                        error.value = "No encontramos un personaje con ese ID.";
+
+                    }
+
+
+                    finally {
+
+                        estaCargando.value = false;
+
+                    }
+
+                };
+
+
+                // COLOR DEL ESTADO
+                const obtenerColorEstado = (status) => {
+
+                    if (status === "Alive") {
+
+                        return "bg-green-500";
+
+                    }
+
+
+                    if (status === "Dead") {
+
+                        return "bg-red-500";
+
+                    }
+
+
+                    return "bg-gray-500";
+
+                };
+
+
+                return {
+
+                    idPersonaje,
+
+                    personaje,
+
+                    estaCargando,
+
+                    error,
+
+                    obtenerPersonaje,
+
+                    obtenerColorEstado
+
+                };
+
+            }
+
+        }).mount("#app");
+
+    </script>
+
+
+</body>
+
+</html>
